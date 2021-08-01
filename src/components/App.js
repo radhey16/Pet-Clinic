@@ -1,12 +1,9 @@
-import React, { Component } from 'react';
-import '../css/App.css';
-import { findIndex, without } from 'lodash';
 import { useState, useEffect, useCallback } from 'react'
+import '../css/App.css';
 import { BiCalendar } from "react-icons/bi"
+import Search from "./components/Search"
+import AddAppointment from "./components/AddAppointment"
 import AppointmentInfo from "./components/AppointmentInfo"
-import AddAppointments from './AddAppointments';
-import SearchAppointments from './SearchAppointments';
-import ListAppointments from './ListAppointments';
 
 function App() {
 
