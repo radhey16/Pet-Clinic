@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
 import '../css/App.css';
+import { useState, useEffect, useCallback } from 'react'
 import { BiCalendar } from "react-icons/bi"
 import Search from "./components/Search"
 import AddAppointment from "./components/AddAppointment"
