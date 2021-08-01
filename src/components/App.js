@@ -1,156 +1,80 @@
 import React, { Component } from 'react';
 import '../css/App.css';
-
+import { findIndex, without } from 'lodash';
+import { useState, useEffect, useCallback } from 'react'
+import { BiCalendar } from "react-icons/bi"
+import AppointmentInfo from "./components/AppointmentInfo"
 import AddAppointments from './AddAppointments';
 import SearchAppointments from './SearchAppointments';
 import ListAppointments from './ListAppointments';
 
-import { findIndex, without } from 'lodash';
+function App() {
 
-class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      myAppointments: [],
-      formDisplay: false,
-      orderBy: 'petName',
-      orderDir: 'asc',
-      queryText: '',
-      lastIndex: 0
-    };
-    this.deleteAppointment = this.deleteAppointment.bind(this);
-    this.toggleForm = this.toggleForm.bind(this);
-    this.addAppointment = this.addAppointment.bind(this);
-    this.changeOrder = this.changeOrder.bind(this);
-    this.searchApts = this.searchApts.bind(this);
-    this.updateInfo = this.updateInfo.bind(this);
-  }
+  let [appointmentList, setAppointmentList] = useState([]);
+  let [query, setQuery] = useState("");
+  let [sortBy, setSortBy] = useState("petName");
+  let [orderBy, setOrderBy] = useState("asc");
 
-  toggleForm() {
-    this.setState({
-      formDisplay: !this.state.formDisplay
-    });
-  }
+  const filteredAppointments = appointmentList.filter(
+    item => {
+      return (
+        item.petName.toLowerCase().includes(query.toLowerCase()) ||
+        item.ownerName.toLowerCase().includes(query.toLowerCase()) ||
+        item.aptNotes.toLowerCase().includes(query.toLowerCase())
+      )
+    }
+  ).sort((a, b) => {
+    let order = (orderBy === 'asc') ? 1 : -1;
+    return (
+      a[sortBy].toLowerCase() < b[sortBy].toLowerCase()
+        ? -1 * order : 1 * order
+    )
+  })
 
-  searchApts(query) {
-    this.setState({ queryText: query });
-  }
-
-  changeOrder(order, dir) {
-    this.setState({
-      orderBy: order,
-      orderDir: dir
-    });
-  }
-
-  updateInfo(name, value, id) {
-    let tempApts = this.state.myAppointments;
-    let aptIndex = findIndex(this.state.myAppointments, {
-      aptId: id
-    });
-    tempApts[aptIndex][name] = value;
-    this.setState({
-      myAppointments: tempApts
-    });
-  }
-
-  addAppointment(apt) {
-    let tempApts = this.state.myAppointments;
-    apt.aptId = this.state.lastIndex;
-    tempApts.unshift(apt);
-    this.setState({
-      myAppointments: tempApts,
-      lastIndex: this.state.lastIndex + 1
-    });
-  }
-
-  deleteAppointment(apt) {
-    let tempApts = this.state.myAppointments;
-    tempApts = without(tempApts, apt);
-
-    this.setState({
-      myAppointments: tempApts
-    });
-  }
-
-  componentDidMount() {
+  const fetchData = useCallback(() => {
     fetch('./data.json')
       .then(response => response.json())
-      .then(result => {
-        const apts = result.map(item => {
-          item.aptId = this.state.lastIndex;
-          this.setState({ lastIndex: this.state.lastIndex + 1 });
-          return item;
-        });
-        this.setState({
-          myAppointments: apts
-        });
+      .then(data => {
+        setAppointmentList(data)
       });
-  }
+  }, [])
 
-  render() {
-    let order;
-    let filteredApts = this.state.myAppointments;
-    if (this.state.orderDir === 'asc') {
-      order = 1;
-    } else {
-      order = -1;
-    }
+  useEffect(() => {
+    fetchData()
+  }, [fetchData]);
 
-    filteredApts = filteredApts
-      .sort((a, b) => {
-        if (
-          a[this.state.orderBy].toLowerCase() <
-          b[this.state.orderBy].toLowerCase()
-        ) {
-          return -1 * order;
-        } else {
-          return 1 * order;
+  return (
+    <div className="App container mx-auto mt-3 font-thin">
+      <h1 className="text-5xl mb-3">
+        <BiCalendar className="inline-block text-red-400 align-top" />Your Appointments</h1>
+      <AddAppointment
+        onSendAppointment={myAppointment => setAppointmentList([...appointmentList, myAppointment])}
+        lastId={appointmentList.reduce((max, item) => Number(item.id) > max ? Number(item.id) : max, 0)}
+      />
+      <Search query={query}
+        onQueryChange={myQuery => setQuery(myQuery)}
+        orderBy={orderBy}
+        onOrderByChange={mySort => setOrderBy(mySort)}
+        sortBy={sortBy}
+        onSortByChange={mySort => setSortBy(mySort)}
+      />
+
+      <ul className="divide-y divide-gray-200">
+        {filteredAppointments
+          .map(appointment => (
+            <AppointmentInfo key={appointment.id}
+              appointment={appointment}
+              onDeleteAppointment={
+                appointmentId =>
+                  setAppointmentList(appointmentList.filter(appointment =>
+                    appointment.id !== appointmentId))
+              }
+            />
+          ))
         }
-      })
-      .filter(eachItem => {
-        return (
-          eachItem['petName']
-            .toLowerCase()
-            .includes(this.state.queryText.toLowerCase()) ||
-          eachItem['ownerName']
-            .toLowerCase()
-            .includes(this.state.queryText.toLowerCase()) ||
-          eachItem['aptNotes']
-            .toLowerCase()
-            .includes(this.state.queryText.toLowerCase())
-        );
-      });
-
-    return (
-      <main className="page bg-white" id="petratings">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-12 bg-white">
-              <div className="container">
-                <AddAppointments
-                  formDisplay={this.state.formDisplay}
-                  toggleForm={this.toggleForm}
-                  addAppointment={this.addAppointment}
-                />
-                <SearchAppointments
-                  orderBy={this.state.orderBy}
-                  orderDir={this.state.orderDir}
-                  changeOrder={this.changeOrder}
-                  searchApts={this.searchApts}
-                />
-                <ListAppointments
-                  appointments={filteredApts}
-                  deleteAppointment={this.deleteAppointment}
-                  updateInfo={this.updateInfo}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
+      </ul>
+    </div>
+  );
 }
 
 export default App;
