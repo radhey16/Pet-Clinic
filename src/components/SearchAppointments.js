@@ -60,4 +60,4 @@ const Search = ({ query, onQueryChange, sortBy, onSortByChange, orderBy, onOrder
   )
 }
 
-export default SearchAppointments
+export default Search
